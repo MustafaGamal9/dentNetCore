@@ -1,4 +1,4 @@
-﻿using JwtApp.DTO; 
+﻿using JwtApp.DTO;
 using JwtApp.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -36,13 +36,11 @@ namespace JwtApp.Controllers
             if (!await _roleManager.RoleExistsAsync(roleName))
                 return BadRequest($"Invalid role specified: {roleName}. Role must be 'User' or 'Admin'.");
 
-            var existingUserByName = await _userManager.FindByNameAsync(request.UserName);
-            if (existingUserByName != null)
-                return BadRequest($"Username '{request.UserName}' is already taken.");
+            // --- FIX: Removed the check for existing username ---
 
             var existingUserByEmail = await _userManager.FindByEmailAsync(request.Email);
             if (existingUserByEmail != null)
-                return BadRequest($"Email '{request.Email}' is already registered.");
+                return BadRequest(new { Message = $"Email '{request.Email}' is already registered." });
 
             var user = new User
             {
@@ -51,7 +49,7 @@ namespace JwtApp.Controllers
                 Email = request.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 EmailConfirmed = true,
-                
+
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -88,7 +86,7 @@ namespace JwtApp.Controllers
                     UserName = user.UserName,
                     Email = user.Email,
 
-                  
+
                 });
             }
             return Ok(userResults);
@@ -108,59 +106,45 @@ namespace JwtApp.Controllers
                 UserName = user.UserName,
                 Email = user.Email,
                 Roles = roles,
-               
+
             };
             return Ok(userResult);
         }
 
         // PUT /api/Admin/users/{id}
         [HttpPut("users/{id:guid}")]
-        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] CreateUserDTO request) // should remove password later for security purposes
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] CreateUserDTO request)
         {
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null) return NotFound($"User with ID '{id}' not found.");
 
             if (!await _roleManager.RoleExistsAsync(request.Role))
-                return BadRequest($"Invalid role specified: {request.Role}. Role must be 'Admin', 'Student', or 'Teacher'.");
+                return BadRequest($"Invalid role specified: {request.Role}. Role must be 'Admin' or 'User'.");
 
-            if (user.UserName != request.UserName)
-            {
-                var existingUserByName = await _userManager.FindByNameAsync(request.UserName);
-                if (existingUserByName != null && existingUserByName.Id != user.Id)
-                    return BadRequest($"Username '{request.UserName}' is already taken by another user.");
-                await _userManager.SetUserNameAsync(user, request.UserName);
-            }
+            // Usernames can be duplicated, so we only need to set it.
+            await _userManager.SetUserNameAsync(user, request.UserName);
+
+            // Emails must be unique, so we check if the new email is taken by another user.
             if (user.Email != request.Email)
             {
                 var existingUserByEmail = await _userManager.FindByEmailAsync(request.Email);
                 if (existingUserByEmail != null && existingUserByEmail.Id != user.Id)
-                    return BadRequest($"Email '{request.Email}' is already registered by another user.");
+                    return BadRequest(new { Message = $"Email '{request.Email}' is already registered by another user." });
                 await _userManager.SetEmailAsync(user, request.Email);
             }
 
             if (!string.IsNullOrWhiteSpace(request.Password))
             {
-                // Generate a password reset token 
                 var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-                // Use the token to reset the password using Identity's secure mechanism
                 var passwordResult = await _userManager.ResetPasswordAsync(user, resetToken, request.Password);
-
                 if (!passwordResult.Succeeded)
                 {
                     return BadRequest(new { Message = $"Password update failed for user '{user.UserName}'.", Errors = passwordResult.Errors.Select(e => e.Description) });
                 }
-                // Password successfully updated and hashed by Identity
             }
 
-
-
-            
-           // If we want update Level/Subject, we should add these fields to CreateUserDTO or use diffrent DTO
-
-
             var currentRoles = await _userManager.GetRolesAsync(user);
-            if (!currentRoles.Contains(request.Role) || currentRoles.Count > 1) 
+            if (!currentRoles.Contains(request.Role) || currentRoles.Count > 1)
             {
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeResult.Succeeded)
@@ -173,7 +157,7 @@ namespace JwtApp.Controllers
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
-  
+
                 return BadRequest(new { Message = $"Failed to save final updates for user '{user.UserName}'.", Errors = updateResult.Errors.Select(e => e.Description) });
 
             return Ok(new { Message = $"CONFIRMED: User '{user.UserName}' (ID: {id}) updated successfully." + (!string.IsNullOrWhiteSpace(request.Password) ? " Password was changed." : "") });

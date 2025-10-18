@@ -32,11 +32,13 @@ namespace JwtApp.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            // --- Check for existing Email ---
+            // --- Check for existing Email (Emails must be unique) ---
             var existingUserByEmail = await _userManager.FindByEmailAsync(request.Email);
             if (existingUserByEmail != null)
-                return BadRequest($"Email '{request.Email}' is already registered.");
- 
+                return BadRequest(new { Message = $"Email '{request.Email}' is already registered." });
+
+            // --- FIX: The check for a unique username has been removed as per your request ---
+            // The database schema change now handles this rule automatically.
 
             var user = new User
             {
@@ -63,9 +65,9 @@ namespace JwtApp.Controllers
         // ---  Login Endpoint  ---
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<ActionResult<TokenResponseDTO>> Login([FromBody] LoginDTO request) 
+        public async Task<ActionResult<TokenResponseDTO>> Login([FromBody] LoginDTO request)
         {
-            var tokenResponse = await _authService.LoginAsync(request); 
+            var tokenResponse = await _authService.LoginAsync(request);
             if (tokenResponse is null)
             {
                 return BadRequest("Invalid email or password.");
