@@ -43,7 +43,7 @@ namespace JwtApp.Controllers
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                UserName = request.UserName,
+                UserName = request.Email, // Use email as username
                 Email = request.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 EmailConfirmed = true
@@ -55,9 +55,9 @@ namespace JwtApp.Controllers
 
             var roleResult = await _userManager.AddToRoleAsync(user, "User");
             if (!roleResult.Succeeded)
-                return BadRequest(new { Message = $"User '{request.UserName}' created, but failed to assign 'User' role.", Errors = roleResult.Errors.Select(e => e.Description) });
+                return BadRequest(new { Message = $"User '{request.Email}' created, but failed to assign 'User' role.", Errors = roleResult.Errors.Select(e => e.Description) });
 
-            return Ok(new { Message = $"User '{user.UserName}' registered successfully.", UserId = user.Id });
+            return Ok(new { Message = $"User '{user.Email}' registered successfully.", UserId = user.Id });
         }
 
 

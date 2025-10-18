@@ -109,7 +109,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -133,11 +132,11 @@ using (var scope = app.Services.CreateScope())
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-    string adminUserName = "Mustafa";
-    var adminUser = await userManager.FindByNameAsync(adminUserName);
+    string adminEmail = "Mustafa@gmail.com";
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
-    {                                                                         // use email
-        adminUser = new User { Id = Guid.NewGuid(), UserName = adminUserName, Email = "Mustafa@gmail.com", EmailConfirmed = true }; 
+    {                                                                         // use email as username
+        adminUser = new User { Id = Guid.NewGuid(), UserName = adminEmail, Email = adminEmail, EmailConfirmed = true }; 
                                                               // password                                                                  
         var result = await userManager.CreateAsync(adminUser, "12345Mm@");
         if (result.Succeeded)

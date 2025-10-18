@@ -113,7 +113,7 @@ namespace JwtApp.Services
 
             var claims = new List<Claim>
                    {
-                       new Claim(ClaimTypes.Name, user.UserName),
+                       new Claim(ClaimTypes.Name, user.Email), // Use email as name
                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                        
                    };

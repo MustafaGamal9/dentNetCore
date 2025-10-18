@@ -4,6 +4,7 @@ using JwtApp.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JwtApp.Migrations
 {
     [DbContext(typeof(JWTDbContext))]
-    partial class JWTDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251018152054_AddDentalCase")]
+    partial class AddDentalCase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,7 +40,7 @@ namespace JwtApp.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Appointments", (string)null);
+                    b.ToTable("Appointments");
                 });
 
             modelBuilder.Entity("JwtApp.Models.DentalCase", b =>
@@ -68,7 +71,7 @@ namespace JwtApp.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DentalCases", (string)null);
+                    b.ToTable("DentalCases");
                 });
 
             modelBuilder.Entity("JwtApp.Models.User", b =>

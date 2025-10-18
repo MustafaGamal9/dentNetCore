@@ -45,7 +45,7 @@ namespace JwtApp.Controllers
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                UserName = request.UserName,
+                UserName = request.Email, // Use email as username
                 Email = request.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 EmailConfirmed = true,
@@ -58,13 +58,12 @@ namespace JwtApp.Controllers
 
             var roleResult = await _userManager.AddToRoleAsync(user, roleName);
             if (!roleResult.Succeeded)
-                return BadRequest(new { Message = $"User '{request.UserName}' created, but failed to assign role '{roleName}'.", Errors = roleResult.Errors.Select(e => e.Description) });
+                return BadRequest(new { Message = $"User '{request.Email}' created, but failed to assign role '{roleName}'.", Errors = roleResult.Errors.Select(e => e.Description) });
 
             return Ok(new
             {
-                Message = $"CONFIRMED: User '{user.UserName}' created successfully with role '{roleName}'.",
+                Message = $"CONFIRMED: User '{user.Email}' created successfully with role '{roleName}'.",
                 UserId = user.Id,
-                Username = user.UserName,
                 Email = user.Email,
                 Role = roleName
             });
@@ -83,7 +82,6 @@ namespace JwtApp.Controllers
                 userResults.Add(new
                 {
                     Id = user.Id,
-                    UserName = user.UserName,
                     Email = user.Email,
 
 
@@ -103,7 +101,6 @@ namespace JwtApp.Controllers
             var userResult = new
             {
                 Id = user.Id,
-                UserName = user.UserName,
                 Email = user.Email,
                 Roles = roles,
 
@@ -121,8 +118,8 @@ namespace JwtApp.Controllers
             if (!await _roleManager.RoleExistsAsync(request.Role))
                 return BadRequest($"Invalid role specified: {request.Role}. Role must be 'Admin' or 'User'.");
 
-            // Usernames can be duplicated, so we only need to set it.
-            await _userManager.SetUserNameAsync(user, request.UserName);
+            // Use email as username
+            await _userManager.SetUserNameAsync(user, request.Email);
 
             // Emails must be unique, so we check if the new email is taken by another user.
             if (user.Email != request.Email)
@@ -139,7 +136,7 @@ namespace JwtApp.Controllers
                 var passwordResult = await _userManager.ResetPasswordAsync(user, resetToken, request.Password);
                 if (!passwordResult.Succeeded)
                 {
-                    return BadRequest(new { Message = $"Password update failed for user '{user.UserName}'.", Errors = passwordResult.Errors.Select(e => e.Description) });
+                    return BadRequest(new { Message = $"Password update failed for user '{user.Email}'.", Errors = passwordResult.Errors.Select(e => e.Description) });
                 }
             }
 
@@ -148,19 +145,19 @@ namespace JwtApp.Controllers
             {
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeResult.Succeeded)
-                    return BadRequest(new { Message = $"Failed to remove existing roles for user '{user.UserName}'.", Errors = removeResult.Errors.Select(e => e.Description) });
+                    return BadRequest(new { Message = $"Failed to remove existing roles for user '{user.Email}'.", Errors = removeResult.Errors.Select(e => e.Description) });
 
                 var addResult = await _userManager.AddToRoleAsync(user, request.Role);
                 if (!addResult.Succeeded)
-                    return BadRequest(new { Message = $"Failed to assign new role '{request.Role}' for user '{user.UserName}'.", Errors = addResult.Errors.Select(e => e.Description) });
+                    return BadRequest(new { Message = $"Failed to assign new role '{request.Role}' for user '{user.Email}'.", Errors = addResult.Errors.Select(e => e.Description) });
             }
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
 
-                return BadRequest(new { Message = $"Failed to save final updates for user '{user.UserName}'.", Errors = updateResult.Errors.Select(e => e.Description) });
+                return BadRequest(new { Message = $"Failed to save final updates for user '{user.Email}'.", Errors = updateResult.Errors.Select(e => e.Description) });
 
-            return Ok(new { Message = $"CONFIRMED: User '{user.UserName}' (ID: {id}) updated successfully." + (!string.IsNullOrWhiteSpace(request.Password) ? " Password was changed." : "") });
+            return Ok(new { Message = $"CONFIRMED: User '{user.Email}' (ID: {id}) updated successfully." + (!string.IsNullOrWhiteSpace(request.Password) ? " Password was changed." : "") });
         }
 
         // --- DELETE USER ---
@@ -176,9 +173,9 @@ namespace JwtApp.Controllers
 
             var result = await _userManager.DeleteAsync(user);
             if (!result.Succeeded)
-                return BadRequest(new { Message = $"Failed to delete user '{user.UserName}'.", Errors = result.Errors.Select(e => e.Description) });
+                return BadRequest(new { Message = $"Failed to delete user '{user.Email}'.", Errors = result.Errors.Select(e => e.Description) });
 
-            return Ok(new { Message = $"CONFIRMED: User '{user.UserName}' (ID: {id}) deleted successfully." });
+            return Ok(new { Message = $"CONFIRMED: User '{user.Email}' (ID: {id}) deleted successfully." });
         }
     }
 }
