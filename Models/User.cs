@@ -8,8 +8,5 @@ namespace JwtApp.Models
 
         public DateTime? RefreshTokenExpiryTime { get; set; }
 
-
-
-
     }
 }

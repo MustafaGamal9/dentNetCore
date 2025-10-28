@@ -10,3 +10,4 @@ namespace JwtApp.DTO
         public DateTime UpdatedAt { get; set; }
     }
 }
+

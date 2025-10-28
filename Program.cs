@@ -1,8 +1,8 @@
 using JwtApp.Data;
-using JwtApp.Models; 
+using JwtApp.Models;
 using JwtApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity; 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -15,27 +15,40 @@ builder.Services.AddDbContext<JWTDbContext>(options =>
   options.UseSqlServer(builder.Configuration.GetConnectionString("db")));
 
 // *** Add Identity Core services ***
-builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => 
+builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
-    // Identity options 
+    // Identity options
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireNonAlphanumeric = false;
-    options.SignIn.RequireConfirmedAccount = false; 
-    options.User.RequireUniqueEmail = true; 
+    options.SignIn.RequireConfirmedAccount = false;
+    options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<JWTDbContext>()
-.AddDefaultTokenProviders(); 
+.AddDefaultTokenProviders();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// ***************************************************************
+// *** 1. Add CORS Services Configuration ***
+// ***************************************************************
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200") // The origin of Angular app
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
-builder.Services.AddAuthentication(options => 
+
+builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -56,7 +69,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 
-builder.Services.AddAuthorization(); 
+builder.Services.AddAuthorization();
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -91,12 +104,12 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 app.UseSwagger();
-app.UseSwaggerUI(c => 
+app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "JwtApp v1");
     c.RoutePrefix = string.Empty;
     c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
-    c.DefaultModelsExpandDepth(-1); 
+    c.DefaultModelsExpandDepth(-1);
     c.EnableDeepLinking();
     c.DisplayRequestDuration();
 });
@@ -109,16 +122,22 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// ***************************************************************
+// *** 2. Enable the CORS Middleware ***
+// This MUST be called before UseAuthentication and UseAuthorization.
+// ***************************************************************
+app.UseCors("AllowSpecificOrigin");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed Roles 
+// Seed Roles
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-    string[] roleNames = { "Admin", "User" }; 
+    string[] roleNames = { "Admin", "User" };
     foreach (var roleName in roleNames)
     {
         var roleExist = await roleManager.RoleExistsAsync(roleName);
@@ -128,7 +147,7 @@ using (var scope = app.Services.CreateScope())
         }
     }
 }
-// *** Seed Admin User *** 
+// *** Seed Admin User ***
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
@@ -136,8 +155,8 @@ using (var scope = app.Services.CreateScope())
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {                                                                         // use email as username
-        adminUser = new User { Id = Guid.NewGuid(), UserName = adminEmail, Email = adminEmail, EmailConfirmed = true }; 
-                                                              // password                                                                  
+        adminUser = new User { Id = Guid.NewGuid(), UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
+        // password
         var result = await userManager.CreateAsync(adminUser, "12345Mm@");
         if (result.Succeeded)
         {
