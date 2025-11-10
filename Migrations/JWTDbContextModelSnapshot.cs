@@ -70,7 +70,7 @@ namespace JwtApp.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Appointments");
+                    b.ToTable("Appointments", (string)null);
                 });
 
             modelBuilder.Entity("JwtApp.Models.DentalCase", b =>
@@ -101,7 +101,7 @@ namespace JwtApp.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DentalCases");
+                    b.ToTable("DentalCases", (string)null);
                 });
 
             modelBuilder.Entity("JwtApp.Models.User", b =>
