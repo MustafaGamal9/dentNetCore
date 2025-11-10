@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace JwtApp.Controllers
@@ -41,8 +42,7 @@ namespace JwtApp.Controllers
             }
 
             // ✅ Extract UserId from JWT claims
-            var userId = User.FindFirst("nameid")?.Value
-                         ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -52,7 +52,7 @@ namespace JwtApp.Controllers
             var appointment = new Appointment
             {
                 Id = Guid.NewGuid(),
-                UserId = userId, 
+                UserId = userId,
                 ChildName = request.ChildName,
                 ChildAge = request.ChildAge,
                 ParentName = request.ParentName,
@@ -92,16 +92,18 @@ namespace JwtApp.Controllers
 
             return Ok(appointments);
         }
+
         /// <summary>
         /// Allows a user to view all their own appointments.
         /// </summary>
-        [HttpGet("user/{userId}")]
+        [HttpGet("my-appointments")]
         [Authorize(Roles = "User")]
-        public async Task<IActionResult> GetUserAppointments(string userId)
+        public async Task<IActionResult> GetUserAppointments()
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest(new { Message = "User ID is required" });
+                return Unauthorized(new { Message = "User ID could not be found in token." });
             }
 
             var userAppointments = await _context.Appointments
@@ -109,9 +111,9 @@ namespace JwtApp.Controllers
                                                  .OrderByDescending(a => a.CreatedAt)
                                                  .ToListAsync();
 
-            if (userAppointments == null || !userAppointments.Any())
+            if (!userAppointments.Any())
             {
-                return NotFound(new { Message = "No appointments found for this user" });
+                return Ok(new List<Appointment>());
             }
 
             return Ok(userAppointments);
@@ -134,7 +136,8 @@ namespace JwtApp.Controllers
             appointment.IsConfirmed = true;
             await _context.SaveChangesAsync();
 
-            return Ok(new { 
+            return Ok(new
+            {
                 Message = "Appointment confirmed successfully",
                 AppointmentId = appointment.Id,
                 ChildName = appointment.ChildName,
